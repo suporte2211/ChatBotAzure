@@ -1,0 +1,50 @@
+using System;
+using System.IO;
+using CsvHelper;
+using RestSharp;
+
+namespace SendMessage
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            string csvFile = "numbers.csv";
+
+            // Replace this with your WApp Marketing API token
+            // Get your API token here: https://app.wapp.marketing/apikeys
+            string apiToken = "ENTER API KEY HERE";
+
+            // Optionally specify the target WhatsApp device ID connected to WApp Marketing
+            // you want to use for messages delivery (24 characters hexadecimal value)
+            string device = "DEVICE ID GOES HERE";
+
+            RestClient client = new RestClient("https://api.wapp.marketing/v1/messages");
+
+            using (StreamReader reader = new StreamReader(csvFile))
+            using (CsvReader csv = new CsvReader(reader, System.Globalization.CultureInfo.InvariantCulture))
+            {
+                while (csv.Read())
+                {
+                    string phone = csv.GetField<string>(0);
+                    string message = csv.GetField<string>(1);
+
+                    var request = new RestRequest(Method.POST);
+                    request.AddHeader("Content-Type", "application/json");
+                    request.AddHeader("Authorization", $"{apiToken}");
+                    request.AddJsonBody(new { phone, message, device });
+
+                    IRestResponse response = client.Execute(request);
+                    if (response.IsSuccessful)
+                    {
+                        Console.WriteLine($"=> Message created: {phone}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failed to create message to {phone}: {response.ErrorMessage}");
+                    }
+                }
+            }
+        }
+    }
+}
